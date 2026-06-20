@@ -7,7 +7,7 @@ This is a portfolio-style release. It contains demo media and a concise technica
 
 ## Demo
 
-The best policy can wait for a hand, reach, grasp, and produce a small but visible up/down handshake motion. The right side shows a regression case: the arm makes contact / closes the gripper but does not produce a stable shake.
+The best policy can wait for a hand, reach, grasp, and produce a small but visible up/down handshake motion. The right side shows a regression case: the arm still attempts the task, but grasp quality drops and no stable shake emerges.
 
 | Successful real-robot run | Failure / regression case |
 |---|---|
@@ -29,8 +29,8 @@ Key frames from the same clips:
 | Policy | ACT, approximately 52M parameters, ResNet18 visual backbone |
 | Sensor input | Single front RGB camera + 6D joint state |
 | Action space | 6D joint action for SO101 |
-| Training data | 30 cleaned real-robot episodes, 36,609 frames |
-| Shake-focused data | 24 selected v4 episodes, 24,821 frames |
+| v4 clean data | 30 cleaned real-robot episodes, 36,609 frames |
+| Showcase fine-tune data | 24/30 v4 episodes kept, 24,821 frames after filtering weak demos and trimming long no-op tails |
 | Training hardware | Remote RTX 4090D |
 | Deployment hardware | Local RTX 4060 laptop + physical SO101 arm |
 | Best showcase checkpoint | `ft_shake_release_13k` |
@@ -45,7 +45,7 @@ Key frames from the same clips:
    Recorded real human-hand interaction demonstrations with LeRobot, including synchronized camera video, joint states, actions, and task metadata.
 
 3. **Dataset repair and cleaning**  
-   Rebuilt episode tables, fixed missing/stale metadata, reindexed frames, recomputed numeric stats, and filtered demonstrations with inconsistent shake timing.
+   Rebuilt episode tables, fixed missing/stale metadata, reindexed frames, recomputed numeric stats, selected 24 shake-capable episodes from the 30-episode v4 set, and trimmed long no-op tails.
 
 4. **ACT training and iteration**  
    Trained and fine-tuned ACT policies on remote GPU instances, then compared real-robot behavior instead of relying only on training loss.
@@ -62,14 +62,14 @@ Key frames from the same clips:
 |---|---|---|---|
 | v0.1 | 5 self-recorded episodes | Learned basic hand grasping, no stable shake | Useful first proof |
 | v3 | Stricter protocol | Better wait/reach behavior, shake still weak | Needed cleaner timing |
-| v4 | 30 episodes, 36,609 frames | Grasp/hold became more reliable | Main dataset |
-| v4 shake-focus | Kept shake-capable windows | More visible shake, weaker release behavior | Proved shake is learnable |
-| v4 shake-release | Preserved shake and added release/return supervision | Best overall demo | Current showcase |
-| v5 resampled | Resampled temporal data | Lower real-robot quality despite reasonable loss | Rejected |
+| v4 clean | 30 episodes, 36,609 frames | Grasp/hold became more reliable, but autonomous shake stayed weak | Base real-robot dataset |
+| v4 shake-focus | Kept 24 shake-capable episodes and cut after the shake window | Shake became more visible, but the policy over-shook and often failed to release/open cleanly | Diagnostic middle step, not final showcase |
+| v4 shake-release | Same 24 episodes, cut at last closed-gripper frame + 3s; 24,821 frames | Best balance so far: reliable grasp + small visible shake + better release supervision | Current showcase |
+| v5 resampled | Resampled temporal data | Basic grasp quality degraded despite similar training loss | Rejected |
 
 ## Why the Failure Case Matters
 
-The v5 result is a useful negative example: the training loss looked acceptable, but real-robot behavior regressed. For contact-rich manipulation, temporal structure mattered more than just adding more processed data. Resampling smoothed or shifted the fine timing needed for a post-grasp shake, so the model became worse at the physical task.
+The v5 result is a useful negative example: the training loss looked acceptable, but real-robot behavior regressed. For contact-rich manipulation, temporal structure mattered more than just adding more processed data. Resampling smoothed or shifted the fine timing needed for a post-grasp shake, and even the basic grasp became less reliable.
 
 This is the main engineering lesson from the project: **real-robot evaluation is the source of truth**. Loss curves were helpful for debugging, but they did not reliably predict whether the arm would actually grasp and shake a human hand.
 
