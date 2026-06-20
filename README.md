@@ -80,7 +80,9 @@ This is the main engineering lesson from the project: **real-robot evaluation is
 - ACT learned the visual approach and grasp more readily than the repeated shake phase.
 - A production-quality version could use a hybrid controller: learned visuomotor control for approach/grasp, then a constrained low-level primitive for the repetitive shake.
 
-## Repository Contents
+## Main Demo Assets
+
+The README primarily uses these demo assets:
 
 ```text
 assets/
