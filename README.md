@@ -60,16 +60,19 @@ Key frames from the same clips:
 
 | Version | Dataset / change | Real-robot behavior | Decision |
 |---|---|---|---|
-| v0.1 | 5 self-recorded episodes | Learned basic hand grasping, no stable shake | Useful first proof |
-| v3 | Stricter protocol | Better wait/reach behavior, shake still weak | Needed cleaner timing |
-| v4 clean | 30 episodes, 36,609 frames | Grasp/hold became more reliable, but autonomous shake stayed weak | Base real-robot dataset |
-| v4 shake-focus | Kept 24 shake-capable episodes and cut after the shake window | Shake became more visible, but the policy over-shook and often failed to release/open cleanly | Diagnostic middle step, not final showcase |
-| v4 shake-release | Same 24 episodes, cut at last closed-gripper frame + 3s; 24,821 frames | Best balance so far: reliable grasp + small visible shake + better release supervision | Current showcase |
-| v5 resampled | Resampled temporal data | Basic grasp quality degraded despite similar training loss | Rejected |
+| v0.1 | 5 self-recorded episodes, fine-tuned from a SO101 public checkpoint | First model that could grasp a human hand; no stable up/down shake | Useful first proof |
+| v2 cleaned | Removed bad demos and trimmed inconsistent post-release tails | Marginal improvement, still not enough for a clean handshake | Intermediate cleanup |
+| v3 protocol | Stricter empty-hand-grasp-shake-release recording protocol | Better wait/reach behavior, shake still weak | Needed cleaner timing |
+| v3 clean 8k | 7 filtered shake-oriented episodes | Could grasp and sometimes produce two light shakes, but had idle/no-hand movement and jitter | Fallback demo candidate |
+| v4 clean 8k | 30 episodes, 36,609 frames | Grasp/hold became more reliable, but autonomous shake stayed weak | Base real-robot dataset |
+| v4 shake-focus 8k | Kept 24 shake-capable episodes, 17,515 frames; cut after the shake window | Shake became more visible, but the policy over-shook and often failed to release/open cleanly | Diagnostic middle step, not final showcase |
+| v4 shake-release 8k/13k/20k | Same 24 episodes, cut at last closed-gripper frame + 3s; 24,821 frames | 13k gave the best local demo: reliable grasp + small visible shake + better release supervision; 20k had lower loss but was not chosen as the showcase | Current showcase family |
+| v5 resampled 13k | Resampled temporal data | Worse than v4 despite similar loss: MRT=6 gave about 7% grip, MRT=8 was unstable/jittery, MRT=5 still had bad behavior | Rejected; keep original 30fps timing |
+| v5 weighted 5k | Weighted sampler on the 24-episode shake-release set, initialized from the 20k checkpoint | Final loss improved, but real-robot eval stayed weak: two MRT=6 runs both had about 8% grip | Rejected; loss did not transfer to behavior |
 
 ## Why the Failure Case Matters
 
-The v5 result is a useful negative example: the training loss looked acceptable, but real-robot behavior regressed. For contact-rich manipulation, temporal structure mattered more than just adding more processed data. Resampling smoothed or shifted the fine timing needed for a post-grasp shake, and even the basic grasp became less reliable.
+The v5 results are useful negative examples: both resampling and weighted sampling looked reasonable from a training-loss perspective, but real-robot behavior regressed. For contact-rich manipulation, temporal structure mattered more than just adding more processed data. Resampling smoothed or shifted the fine timing needed for a post-grasp shake, and even the basic grasp became less reliable. Weighted sampling improved loss but still failed to recover robust grasp/shake behavior.
 
 This is the main engineering lesson from the project: **real-robot evaluation is the source of truth**. Loss curves were helpful for debugging, but they did not reliably predict whether the arm would actually grasp and shake a human hand.
 
